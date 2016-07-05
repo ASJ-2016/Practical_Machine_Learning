@@ -153,6 +153,9 @@ $(document).ready(function () {
 </ul></li>
 <li><a href="#prediction"><span class="toc-section-number">3</span> Prediction</a><ul>
 <li><a href="#variable-to-predict."><span class="toc-section-number">3.1</span> Variable to predict.</a></li>
+<li><a href="#training-the-prediction-models"><span class="toc-section-number">3.2</span> Training the prediction models</a></li>
+<li><a href="#testing-the-prediction-models"><span class="toc-section-number">3.3</span> Testing the prediction models</a></li>
+<li><a href="#predicting-with-the-models"><span class="toc-section-number">3.4</span> Predicting with the models</a></li>
 </ul></li>
 </ul>
 </div>
@@ -180,7 +183,7 @@ $(document).ready(function () {
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rm</span>(<span class="dt">list=</span><span class="kw">ls</span>(<span class="dt">all=</span><span class="ot">TRUE</span>))
 knitr::opts_chunk$<span class="kw">set</span>(<span class="dt">cache=</span><span class="ot">TRUE</span>)
 
-<span class="kw">setwd</span>(<span class="kw">paste0</span>(COURSERADIR, <span class="st">&quot;./08 - Practical Machine Learning/Quizes and Assigments&quot;</span>))
+<span class="kw">setwd</span>(<span class="kw">paste0</span>(COURSERADIR, <span class="st">&quot;./08 - Practical Machine Learning/Quizes and Assigments/Practical_Machine_Learning&quot;</span>))
 
 <span class="kw">library</span>(caret)
 <span class="kw">library</span>(gbm)
@@ -293,35 +296,96 @@ inTest  &lt;-<span class="st"> </span>train[-toTrain,]
 ##   eurico   0.2833426 0.1920310 0.1660210 0.1848367 0.1737687
 ##   jeremy   0.3443259 0.1440349 0.1881668 0.1561591 0.1673133
 ##   pedro    0.2461637 0.1937340 0.1828645 0.1835038 0.1937340</code></pre>
-<p>predict diagnosis with all the other variables using . Stack the predictions together using random forests (“rf”).</p>
-<p>Random forest (“rf”), boosted trees (“gbm”) and linear discriminant analysis (“lda”) models will be used to predict the <strong>classe</strong>. Then we look which of them provides the best accuracty.</p>
+</div>
+<div id="training-the-prediction-models" class="section level2">
+<h2><span class="header-section-number">3.2</span> Training the prediction models</h2>
+<p>Random forest (“rf”), Stochastic Gradient Boosting (“gbm”) and linear discriminant analysis (“lda”) models will be used to predict the <strong>classe</strong>. Then we look which of them provides the best accuracty. Since the models are slow to train, we woult better save the model after trainning.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">123456</span>)
-    
-<span class="co"># # Random Forest - VERY SLOW</span>
-<span class="co"># mod_rf &lt;- train(classe ~ ., data = inTrain, method = &quot;rf&quot;)</span>
-<span class="co"># # Boosted trees - SLOW</span>
-<span class="co"># mod_gbm &lt;- train(classe ~ ., data = inTrain, method = &quot;gbm&quot;, verbose = FALSE)</span>
-<span class="co"># # Linear discriminant analysis - FAST</span>
-<span class="co"># mod_lda &lt;- train(classe ~ ., data = inTrain, method = &quot;lda&quot;)</span></code></pre></div>
-<p>Then we can predict</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># pred_rf &lt;- predict(mod_rf, inTest)</span>
-<span class="co"># pred_gbm &lt;- predict(mod_gbm, inTest)</span>
-<span class="co"># pred_lda &lt;- predict(mod_lda, inTest)</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># # Accuracy using random forests</span>
-<span class="co"># confusionMatrix(pred_rf, inTest$diagnosis)$overall[1]</span>
-<span class="co"># # Accuracy using boosting</span>
-<span class="co"># confusionMatrix(pred_gbm, inTest$diagnosis)$overall[1]</span>
-<span class="co"># # Accuracy using linear discriminant analysis</span>
-<span class="co"># confusionMatrix(pred_lda, inTest$diagnosis)$overall[1]</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># pred_rf_test &lt;- predict(mod_rf, test)</span>
-<span class="co"># pred_gbm_test &lt;- predict(mod_gbm, test)</span>
-<span class="co"># pred_lda_test &lt;- predict(mod_lda, test)</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># # Accuracy using random forests</span>
-<span class="co"># confusionMatrix(pred_rf_test, test$diagnosis)$overall[1]</span>
-<span class="co"># # Accuracy using boosting</span>
-<span class="co"># confusionMatrix(pred_gbm_test, test$diagnosis)$overall[1]</span>
-<span class="co"># # Accuracy using linear discriminant analysis</span>
-<span class="co"># confusionMatrix(pred_lda_test, test$diagnosis)$overall[1]</span></code></pre></div>
+
+<span class="co"># Random Forest - VERY SLOW</span>
+mod_rf &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;rf&quot;</span>)
+<span class="co"># Stochastic Gradient Boosting - VERY SLOW</span>
+mod_gbm &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;gbm&quot;</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)
+<span class="co"># Linear discriminant analysis - FAST</span>
+mod_lda &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;lda&quot;</span>)
+
+<span class="kw">save</span>(mod_rf, <span class="dt">file=</span><span class="st">&quot;mod_rf.RData&quot;</span>)
+<span class="kw">save</span>(mod_gbm, <span class="dt">file=</span><span class="st">&quot;mod_gbm.RData&quot;</span>)
+<span class="kw">save</span>(mod_lda, <span class="dt">file=</span><span class="st">&quot;mod_lda.RData&quot;</span>)</code></pre></div>
+<p>If necessary, it is possible to load the trained models (in my PC, takes more than 2 hours to compute the train).</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">load</span>(<span class="dt">file=</span><span class="st">&quot;mod_rf.RData&quot;</span>)
+<span class="kw">load</span>(<span class="dt">file=</span><span class="st">&quot;mod_gbm.RData&quot;</span>)
+<span class="kw">load</span>(<span class="dt">file=</span><span class="st">&quot;mod_lda.RData&quot;</span>)</code></pre></div>
+</div>
+<div id="testing-the-prediction-models" class="section level2">
+<h2><span class="header-section-number">3.3</span> Testing the prediction models</h2>
+<p>Evaluating the model on the probing dataset.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pred_rf &lt;-<span class="st"> </span><span class="kw">predict</span>(mod_rf, inTest)
+pred_gbm &lt;-<span class="st"> </span><span class="kw">predict</span>(mod_gbm, inTest)
+pred_lda &lt;-<span class="st"> </span><span class="kw">predict</span>(mod_lda, inTest)</code></pre></div>
+<p>We compute the Confusoin Matrix to evaluate the accuracy of each model.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Accuracy using random forests</span>
+CM_rf &lt;-<span class="st"> </span><span class="kw">confusionMatrix</span>(pred_rf, inTest$classe)$overall[<span class="dv">1</span>]
+<span class="co"># Accuracy using boosting</span>
+CM_gmb &lt;-<span class="st"> </span><span class="kw">confusionMatrix</span>(pred_gbm, inTest$classe)$overall[<span class="dv">1</span>]
+<span class="co"># Accuracy using linear discriminant analysis</span>
+CM_lda &lt;-<span class="st"> </span><span class="kw">confusionMatrix</span>(pred_lda, inTest$classe)$overall[<span class="dv">1</span>]
+
+<span class="kw">format</span>(<span class="kw">data.frame</span>(CM_rf, CM_gmb, CM_lda), <span class="dt">digits=</span><span class="dv">2</span>)</code></pre></div>
+<pre><code>##          CM_rf CM_gmb CM_lda
+## Accuracy  0.99   0.96   0.74</code></pre>
+<p>The best model appears to be the Random Forest with an accuracy of 99%. we can display the model to see the most important variables.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">varImp</span>(mod_rf)</code></pre></div>
+<pre><code>## rf variable importance
+## 
+##   only 20 most important variables shown (out of 57)
+## 
+##                      Overall
+## roll_belt             100.00
+## pitch_forearm          59.18
+## yaw_belt               52.01
+## magnet_dumbbell_z      44.14
+## pitch_belt             43.64
+## magnet_dumbbell_y      41.93
+## roll_forearm           40.75
+## accel_dumbbell_y       22.55
+## accel_forearm_x        19.50
+## magnet_dumbbell_x      18.78
+## roll_dumbbell          18.54
+## magnet_belt_z          17.55
+## accel_belt_z           14.90
+## magnet_forearm_z       14.69
+## total_accel_dumbbell   14.59
+## accel_dumbbell_z       14.35
+## magnet_belt_y          12.68
+## yaw_arm                12.23
+## gyros_belt_z           12.09
+## magnet_belt_x          12.02</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mod_rf$finalModel</code></pre></div>
+<pre><code>## 
+## Call:
+##  randomForest(x = x, y = y, mtry = param$mtry) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 29
+## 
+##         OOB estimate of  error rate: 0.81%
+## Confusion matrix:
+##      A    B    C    D    E class.error
+## A 3341    3    3    0    1 0.002090800
+## B   23 2250    5    1    0 0.012724879
+## C    0   14 2027   13    0 0.013145083
+## D    0    0   22 1907    1 0.011917098
+## E    0    0    3    6 2156 0.004157044</code></pre>
+<p>The estimated error rate is less than 1%.</p>
+</div>
+<div id="predicting-with-the-models" class="section level2">
+<h2><span class="header-section-number">3.4</span> Predicting with the models</h2>
+<p>We use the best model to predict the Test sample: Random Forest</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pred_rf_test &lt;-<span class="st"> </span><span class="kw">predict</span>(mod_rf, test)
+pred_rf_test</code></pre></div>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
 </div>
 </div>
 

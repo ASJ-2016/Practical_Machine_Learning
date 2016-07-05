@@ -45,7 +45,7 @@ First, clear the environment to ensure that everything is defined and set the wo
 rm(list=ls(all=TRUE))
 knitr::opts_chunk$set(cache=TRUE)
 
-setwd(paste0(COURSERADIR, "./08 - Practical Machine Learning/Quizes and Assigments"))
+setwd(paste0(COURSERADIR, "./08 - Practical Machine Learning/Quizes and Assigments/Practical_Machine_Learning"))
 
 library(caret)
 library(gbm)
@@ -127,7 +127,7 @@ prop.table(table(inTrain$user_name, inTrain$classe), 1)
 
 Random forest ("rf"), Stochastic Gradient Boosting ("gbm") and linear discriminant analysis ("lda") models will be used to predict the **classe**. Then we look which of them provides the best accuracty. Since the models are slow to train, we woult better save the model after trainning.
 
-```{r}
+```{r eval=FALSE, echo=FALSE}
 set.seed(123456)
 t0 <- Sys.time()
 
@@ -149,14 +149,37 @@ t3 <- Sys.time()
 cat("Time to train the random forest: ", t1-t0 , "\n")
 cat("Time to train the random forest: ", t2-t1 , "\n")
 cat("Time to train the random forest: ", t3-t2 , "\n")
-
 ```
+
+```{r eval=FALSE}
+set.seed(123456)
+
+# Random Forest - VERY SLOW
+mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
+# Stochastic Gradient Boosting - VERY SLOW
+mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
+# Linear discriminant analysis - FAST
+mod_lda <- train(classe ~ ., data = inTrain, method = "lda")
+
+save(mod_rf, file="mod_rf.RData")
+save(mod_gbm, file="mod_gbm.RData")
+save(mod_lda, file="mod_lda.RData")
+```
+
+If necessary, it is possible to load the trained models (in my PC, takes more than 2 hours to compute the train).
+
+```{r}
+load(file="mod_rf.RData")
+load(file="mod_gbm.RData")
+load(file="mod_lda.RData")
+```
+
 
 ## Testing the prediction models
 
 Evaluating the model on the probing dataset.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 pred_rf <- predict(mod_rf, inTest)
 pred_gbm <- predict(mod_gbm, inTest)
 pred_lda <- predict(mod_lda, inTest)
@@ -166,18 +189,20 @@ We compute the Confusoin Matrix to evaluate the accuracy of each model.
 
 ```{r}
 # Accuracy using random forests
-confusionMatrix(pred_rf, inTest$diagnosis)$overall[1]
+CM_rf <- confusionMatrix(pred_rf, inTest$classe)$overall[1]
 # Accuracy using boosting
-confusionMatrix(pred_gbm, inTest$diagnosis)$overall[1]
+CM_gmb <- confusionMatrix(pred_gbm, inTest$classe)$overall[1]
 # Accuracy using linear discriminant analysis
-confusionMatrix(pred_lda, inTest$diagnosis)$overall[1]
+CM_lda <- confusionMatrix(pred_lda, inTest$classe)$overall[1]
+
+format(data.frame(CM_rf, CM_gmb, CM_lda), digits=2)
 ```
 
 The best model appears to be the Random Forest with an accuracy of 99%. we can display the model to see the most important variables.
 
 ```{r}
-varImp(pred_rf)
-pred_rf$finalModel
+varImp(mod_rf)
+mod_rf$finalModel
 ```
 
 The estimated error rate is less than 1%.
@@ -190,11 +215,5 @@ We use the best model to predict the Test sample: Random Forest
 ```{r}
 pred_rf_test <- predict(mod_rf, test)
 pred_rf_test
-```
-
-Estimation of the out-of-sample error rate.
-
-```{r}
-confusionMatrix(pred_rf_test, test$diagnosis)$overall
 ```
 

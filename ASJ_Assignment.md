@@ -40,7 +40,7 @@ First, clear the environment to ensure that everything is defined and set the wo
 rm(list=ls(all=TRUE))
 knitr::opts_chunk$set(cache=TRUE)
 
-setwd(paste0(COURSERADIR, "./08 - Practical Machine Learning/Quizes and Assigments"))
+setwd(paste0(COURSERADIR, "./08 - Practical Machine Learning/Quizes and Assigments/Practical_Machine_Learning"))
 
 library(caret)
 library(gbm)
@@ -207,73 +207,140 @@ prop.table(table(inTrain$user_name, inTrain$classe), 1)
 ##   pedro    0.2461637 0.1937340 0.1828645 0.1835038 0.1937340
 ```
 
-predict diagnosis with all the other variables using . Stack the predictions together using random forests ("rf"). 
+## Training the prediction models
 
-Random forest ("rf"), boosted trees ("gbm") and linear discriminant analysis ("lda") models will be used to predict the **classe**. Then we look which of them provides the best accuracty. 
+Random forest ("rf"), Stochastic Gradient Boosting ("gbm") and linear discriminant analysis ("lda") models will be used to predict the **classe**. Then we look which of them provides the best accuracty. Since the models are slow to train, we woult better save the model after trainning.
+
+
 
 
 ```r
 set.seed(123456)
-    
-# # Random Forest - VERY SLOW
-# mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
-# # Boosted trees - SLOW
-# mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
-# # Linear discriminant analysis - FAST
-# mod_lda <- train(classe ~ ., data = inTrain, method = "lda")
+
+# Random Forest - VERY SLOW
+mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
+# Stochastic Gradient Boosting - VERY SLOW
+mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
+# Linear discriminant analysis - FAST
+mod_lda <- train(classe ~ ., data = inTrain, method = "lda")
+
+save(mod_rf, file="mod_rf.RData")
+save(mod_gbm, file="mod_gbm.RData")
+save(mod_lda, file="mod_lda.RData")
 ```
 
-Then we can predict
+If necessary, it is possible to load the trained models (in my PC, takes more than 2 hours to compute the train).
 
 
 ```r
-# pred_rf <- predict(mod_rf, inTest)
-# pred_gbm <- predict(mod_gbm, inTest)
-# pred_lda <- predict(mod_lda, inTest)
+load(file="mod_rf.RData")
+load(file="mod_gbm.RData")
+load(file="mod_lda.RData")
 ```
 
 
+## Testing the prediction models
+
+Evaluating the model on the probing dataset.
 
 
 ```r
-# # Accuracy using random forests
-# confusionMatrix(pred_rf, inTest$diagnosis)$overall[1]
-# # Accuracy using boosting
-# confusionMatrix(pred_gbm, inTest$diagnosis)$overall[1]
-# # Accuracy using linear discriminant analysis
-# confusionMatrix(pred_lda, inTest$diagnosis)$overall[1]
+pred_rf <- predict(mod_rf, inTest)
+pred_gbm <- predict(mod_gbm, inTest)
+pred_lda <- predict(mod_lda, inTest)
 ```
 
-
-
-
-
+We compute the Confusoin Matrix to evaluate the accuracy of each model.
 
 
 ```r
-# pred_rf_test <- predict(mod_rf, test)
-# pred_gbm_test <- predict(mod_gbm, test)
-# pred_lda_test <- predict(mod_lda, test)
+# Accuracy using random forests
+CM_rf <- confusionMatrix(pred_rf, inTest$classe)$overall[1]
+# Accuracy using boosting
+CM_gmb <- confusionMatrix(pred_gbm, inTest$classe)$overall[1]
+# Accuracy using linear discriminant analysis
+CM_lda <- confusionMatrix(pred_lda, inTest$classe)$overall[1]
+
+format(data.frame(CM_rf, CM_gmb, CM_lda), digits=2)
 ```
 
+```
+##          CM_rf CM_gmb CM_lda
+## Accuracy  0.99   0.96   0.74
+```
 
+The best model appears to be the Random Forest with an accuracy of 99%. we can display the model to see the most important variables.
 
 
 ```r
-# # Accuracy using random forests
-# confusionMatrix(pred_rf_test, test$diagnosis)$overall[1]
-# # Accuracy using boosting
-# confusionMatrix(pred_gbm_test, test$diagnosis)$overall[1]
-# # Accuracy using linear discriminant analysis
-# confusionMatrix(pred_lda_test, test$diagnosis)$overall[1]
+varImp(mod_rf)
 ```
 
+```
+## rf variable importance
+## 
+##   only 20 most important variables shown (out of 57)
+## 
+##                      Overall
+## roll_belt             100.00
+## pitch_forearm          59.18
+## yaw_belt               52.01
+## magnet_dumbbell_z      44.14
+## pitch_belt             43.64
+## magnet_dumbbell_y      41.93
+## roll_forearm           40.75
+## accel_dumbbell_y       22.55
+## accel_forearm_x        19.50
+## magnet_dumbbell_x      18.78
+## roll_dumbbell          18.54
+## magnet_belt_z          17.55
+## accel_belt_z           14.90
+## magnet_forearm_z       14.69
+## total_accel_dumbbell   14.59
+## accel_dumbbell_z       14.35
+## magnet_belt_y          12.68
+## yaw_arm                12.23
+## gyros_belt_z           12.09
+## magnet_belt_x          12.02
+```
+
+```r
+mod_rf$finalModel
+```
+
+```
+## 
+## Call:
+##  randomForest(x = x, y = y, mtry = param$mtry) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 29
+## 
+##         OOB estimate of  error rate: 0.81%
+## Confusion matrix:
+##      A    B    C    D    E class.error
+## A 3341    3    3    0    1 0.002090800
+## B   23 2250    5    1    0 0.012724879
+## C    0   14 2027   13    0 0.013145083
+## D    0    0   22 1907    1 0.011917098
+## E    0    0    3    6 2156 0.004157044
+```
+
+The estimated error rate is less than 1%.
 
 
+## Predicting with the models
+
+We use the best model to predict the Test sample: Random Forest
 
 
+```r
+pred_rf_test <- predict(mod_rf, test)
+pred_rf_test
+```
 
-
-
-
+```
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
+```
 
