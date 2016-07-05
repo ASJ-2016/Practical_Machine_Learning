@@ -303,7 +303,7 @@ inTest  &lt;-<span class="st"> </span>train[-toTrain,]
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">123456</span>)
 
 <span class="co"># Random Forest - VERY SLOW</span>
-mod_rf &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;rf&quot;</span>)
+mod_rf &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;rf&quot;</span>, <span class="dt">trControl=</span><span class="kw">trainControl</span>(<span class="dt">method=</span><span class="st">&quot;cv&quot;</span>, <span class="dt">number=</span><span class="dv">5</span>))
 <span class="co"># Stochastic Gradient Boosting - VERY SLOW</span>
 mod_gbm &lt;-<span class="st"> </span><span class="kw">train</span>(classe ~<span class="st"> </span>., <span class="dt">data =</span> inTrain, <span class="dt">method =</span> <span class="st">&quot;gbm&quot;</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)
 <span class="co"># Linear discriminant analysis - FAST</span>
@@ -377,7 +377,7 @@ CM_lda &lt;-<span class="st"> </span><span class="kw">confusionMatrix</span>(pre
 ## C    0   14 2027   13    0 0.013145083
 ## D    0    0   22 1907    1 0.011917098
 ## E    0    0    3    6 2156 0.004157044</code></pre>
-<p>The estimated error rate is less than 1%.</p>
+<p>The estimated error rate is less than 1%, which is lower than expected.</p>
 </div>
 <div id="predicting-with-the-models" class="section level2">
 <h2><span class="header-section-number">3.4</span> Predicting with the models</h2>

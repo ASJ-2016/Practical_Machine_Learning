@@ -218,7 +218,7 @@ Random forest ("rf"), Stochastic Gradient Boosting ("gbm") and linear discrimina
 set.seed(123456)
 
 # Random Forest - VERY SLOW
-mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
+mod_rf <- train(classe ~ ., data = inTrain, method = "rf", trControl=trainControl(method="cv", number=5))
 # Stochastic Gradient Boosting - VERY SLOW
 mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
 # Linear discriminant analysis - FAST
@@ -326,7 +326,7 @@ mod_rf$finalModel
 ## E    0    0    3    6 2156 0.004157044
 ```
 
-The estimated error rate is less than 1%.
+The estimated error rate is less than 1%, which is lower than expected.
 
 
 ## Predicting with the models

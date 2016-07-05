@@ -155,7 +155,7 @@ cat("Time to train the random forest: ", t3-t2 , "\n")
 set.seed(123456)
 
 # Random Forest - VERY SLOW
-mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
+mod_rf <- train(classe ~ ., data = inTrain, method = "rf", trControl=trainControl(method="cv", number=5))
 # Stochastic Gradient Boosting - VERY SLOW
 mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
 # Linear discriminant analysis - FAST
@@ -205,7 +205,7 @@ varImp(mod_rf)
 mod_rf$finalModel
 ```
 
-The estimated error rate is less than 1%.
+The estimated error rate is less than 1%, which is lower than expected.
 
 
 ## Predicting with the models
