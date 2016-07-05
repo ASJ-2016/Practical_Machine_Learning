@@ -1,0 +1,200 @@
+---
+title: "Practical Machine Learning - Prediction Assignment Writeup"
+Author: "Alejandro Serrano"
+Date: "July 2016"
+output: 
+  html_document:
+    fig_height: 3
+    fig_width: 5
+    highlight: haddock
+    keep_md: yes
+    number_sections: yes
+    theme: united
+    toc: yes
+---
+
+```{r echo=FALSE}
+cat("by Alejandro Serrano", "\n")
+cat("Date: ", format(Sys.Date(),  "%a %d %b 20%y"), "\n")
+cat(R.version.string)
+```
+
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify *how well they do it*. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of **6 participants**. They were asked to perform barbell lifts correctly and incorrectly in **5 different ways**. 
+
+*Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).*
+
+*Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).*
+
+More information is available from the website here: [http://groupware.les.inf.puc-rio.br/har](http://groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset).
+
+The training & testing data for this project are available here:
+
+* https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+* https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+# Data Loading and Exploratory Analysis
+
+## Loading R packages and default values
+
+First, clear the environment to ensure that everything is defined and set the working directory. Also, upload the necessary R libraries.
+
+```{r message=FALSE, warning=FALSE}
+rm(list=ls(all=TRUE))
+knitr::opts_chunk$set(cache=TRUE)
+
+setwd(paste0(COURSERADIR, "./08 - Practical Machine Learning/Quizes and Assigments"))
+
+library(caret)
+library(gbm)
+library(randomForest)
+library(corrplot)
+```
+
+## Getting data
+
+The data come in the form of a comma-separated-value file that can download from a URL. We can download and store in memory. We consider any of "NA","#DIV/0!" or "" as NULL value.
+
+```{r}
+URL_train <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+URL_test <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(URL_train), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(URL_test), na.strings=c("NA","#DIV/0!",""))
+
+str(training, list.len=18)
+dim(testing)
+```
+
+
+## Data cleanning
+
+Since predictor candidates must have data, we first eliminate fully NULL variables. The very low variance (NZV) variables and the ID are also removed.
+
+```{r}
+train <- training[ , colSums(is.na(training)) == 0]
+test <- testing[ , colSums(is.na(testing)) == 0]
+
+train <- train[, -nearZeroVar(train)]
+test <- test[, -nearZeroVar(test)]
+
+train <- train[, -c(1, 3:6)]
+test <- test[, -c(1, 3:6)]
+
+str(train, list.len=18)
+dim(test)
+```
+
+## Slicing data
+
+First, we need to split the training set into two for cross validation purposes. We randomly subsample 60% for training and 40% for testing. 
+
+```{r}
+set.seed(123456)
+toTrain <- createDataPartition(y=training$classe, p=0.60, list=FALSE)
+
+inTrain  <- train[toTrain,]
+inTest  <- train[-toTrain,]
+
+dim(inTrain)
+dim(inTest)
+```
+
+## Correlation plot
+
+54 variables are predicor candidates. Let's make first a correlation matrix among all variables. Only numeric variabls can be evaluated in this way. Only half of the plot is neede.
+
+```{r fig.width = 9, fig.height = 9}
+corrMatrix <- cor(na.omit(inTrain[sapply(inTrain, is.numeric)]))
+corrplot(corrMatrix, type = "upper", tl.cex = 0.6, tl.col = 1)
+```
+
+The plot shows very low higly correlated variables. 
+
+# Prediction
+
+## Variable to predict.
+
+The variable **Classe** is the one to predict. Let's explore it.
+
+```{r}
+prop.table(table(inTrain$user_name, inTrain$classe), 1)
+```
+
+## Training the prediction models
+
+Random forest ("rf"), Stochastic Gradient Boosting ("gbm") and linear discriminant analysis ("lda") models will be used to predict the **classe**. Then we look which of them provides the best accuracty. Since the models are slow to train, we woult better save the model after trainning.
+
+```{r}
+set.seed(123456)
+t0 <- Sys.time()
+
+# Random Forest - VERY SLOW
+mod_rf <- train(classe ~ ., data = inTrain, method = "rf")
+save(mod_rf, file="mod_rf.RData")
+t1 <- Sys.time()
+
+# Stochastic Gradient Boosting - VERY SLOW
+mod_gbm <- train(classe ~ ., data = inTrain, method = "gbm", verbose = FALSE)
+save(mod_gbm, file="mod_gbm.RData")
+t2 <- Sys.time()
+
+# Linear discriminant analysis - FAST
+mod_lda <- train(classe ~ ., data = inTrain, method = "lda")
+save(mod_lda, file="mod_lda.RData")
+t3 <- Sys.time()
+
+cat("Time to train the random forest: ", t1-t0 , "\n")
+cat("Time to train the random forest: ", t2-t1 , "\n")
+cat("Time to train the random forest: ", t3-t2 , "\n")
+
+```
+
+## Testing the prediction models
+
+Evaluating the model on the probing dataset.
+
+```{r}
+pred_rf <- predict(mod_rf, inTest)
+pred_gbm <- predict(mod_gbm, inTest)
+pred_lda <- predict(mod_lda, inTest)
+```
+
+We compute the Confusoin Matrix to evaluate the accuracy of each model.
+
+```{r}
+# Accuracy using random forests
+confusionMatrix(pred_rf, inTest$diagnosis)$overall[1]
+# Accuracy using boosting
+confusionMatrix(pred_gbm, inTest$diagnosis)$overall[1]
+# Accuracy using linear discriminant analysis
+confusionMatrix(pred_lda, inTest$diagnosis)$overall[1]
+```
+
+The best model appears to be the Random Forest with an accuracy of 99%. we can display the model to see the most important variables.
+
+```{r}
+varImp(pred_rf)
+pred_rf$finalModel
+```
+
+The estimated error rate is less than 1%.
+
+
+## Predicting with the models
+
+We use the best model to predict the Test sample: Random Forest
+
+```{r}
+pred_rf_test <- predict(mod_rf, test)
+pred_rf_test
+```
+
+Estimation of the out-of-sample error rate.
+
+```{r}
+confusionMatrix(pred_rf_test, test$diagnosis)$overall
+```
+
